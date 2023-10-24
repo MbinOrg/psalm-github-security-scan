@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Psalm Security Scan
-        uses: docker://ghcr.io/psalm/psalm-security-scan
+        uses: docker://ghcr.io/MbinOrg/psalm-security-scan
         
       - name: Import Security Analysis results into GitHub Security Code Scanning
         uses: github/codeql-action/upload-sarif@v2
@@ -29,6 +29,6 @@ jobs:
 You can also specify a version.
 
 ```diff
--        uses: docker://ghcr.io/psalm/psalm-security-scan
-+        uses: docker://ghcr.io/psalm/psalm-security-scan:5.7.7
+-        uses: docker://ghcr.io/MbinOrg/psalm-security-scan
++        uses: docker://ghcr.io/MbinOrg/psalm-security-scan:5.7.7
 ```
