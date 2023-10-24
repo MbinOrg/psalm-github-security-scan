@@ -5,11 +5,11 @@ LABEL "com.github.actions.description"="A static analysis tool for finding error
 LABEL "com.github.actions.icon"="check"
 LABEL "com.github.actions.color"="blue"
 
-LABEL "repository"="http://github.com/psalm/psalm-github-security-scan"
+LABEL "repository"="http://github.com/mbinorg/psalm-github-security-scan"
 LABEL "homepage"="http://github.com/actions"
-LABEL "maintainer"="Matt Brown <github@muglug.com>"
+LABEL "maintainer"="Melroy van den Berg <melroy@melroy.org>"
 
-# Code borrowed from mickaelandrieu/psalm-ga which in turn borrowed from phpqa/psalm
+# Code borrowed from psalm/psalm-github-security-scan
 
 # Install Tini - https://github.com/krallin/tini
 
