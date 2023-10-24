@@ -1,7 +1,7 @@
 
 # https://help.github.com/en/articles/metadata-syntax-for-github-actions
 
-author: 'muglug'
+author: 'melroy89'
 branding:
   icon: 'check'
   color: 'blue'
@@ -14,4 +14,4 @@ inputs:
     description: 'File for Psalm’s output'
 runs:
   using: 'docker'
-  image: 'docker://ghcr.io/psalm/psalm-security-scan:5.15.0'
+  image: 'docker://ghcr.io/MbinOrg/psalm-security-scan:5.15.0'
