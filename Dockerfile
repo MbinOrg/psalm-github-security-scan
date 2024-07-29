@@ -24,7 +24,7 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 \
 # Install php extensions, by docker-php-extension-installer
 # Required for some composer packages to be pre-installed
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions amqp gd curl simplexml dom xml redis intl opcache apcu pcntl
+RUN install-php-extensions amqp gd curl simplexml dom xml redis intl opcache apcu pcntl bcmath
 
 # This line invalidates cache when master branch change
 ADD https://github.com/vimeo/psalm/commits/master.atom /dev/null
