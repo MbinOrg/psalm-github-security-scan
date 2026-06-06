@@ -30,5 +30,5 @@ You can also specify a version.
 
 ```diff
 -        uses: docker://ghcr.io/mbinorg/psalm-security-scan
-+        uses: docker://ghcr.io/mbinorg/psalm-security-scan:5.7.7
++        uses: docker://ghcr.io/mbinorg/psalm-security-scan:5.26.2
 ```
