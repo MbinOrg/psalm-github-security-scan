@@ -33,7 +33,7 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME="/composer" \
     composer global require vimeo/psalm --prefer-dist --no-progress --dev
 
-ENV PATH /composer/vendor/bin:${PATH}
+ENV PATH=/composer/vendor/bin:${PATH}
 
 # Satisfy Psalm's quest for a composer autoloader (with a symlink that disappears once a volume is mounted at /app)
 
