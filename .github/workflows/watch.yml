@@ -4,55 +4,87 @@ on:
   schedule:
     - cron: '30 */4 * * *'
   push:
-    branches: ['master']
+    branches:
+      - master
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mbinorg/psalm-security-scan
 
 jobs:
   docker:
-    name: Push tagged docker image
+    name: Publish Psalm image
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       packages: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
-          ref: master
+          ref: ${{ github.event.repository.default_branch }}
 
-      - name: Login to ghcr
-        uses: docker/login-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Dockerfile with latest version
+      - name: Find latest stable Psalm version
         id: fetch_version
         run: |
-          last=$(curl -s https://packagist.org/packages/vimeo/psalm.json|jq '[.package.versions[]|select(.version|test("^\\d+\\.\\d+\\.\\d+$"))|.version]|max_by(.|[splits("[.]")]|map(tonumber))')
-          last=$(echo $last | tr -d '"')
-          echo "Last Psalm version is $last"
-          echo "last=$last" >> $GITHUB_OUTPUT
+          set -euo pipefail
 
-          sed -i -re "s/require vimeo\/psalm/require vimeo\/psalm:$last/" Dockerfile
-          cat Dockerfile
+          version=$(curl --fail --silent --show-error --location \
+            https://packagist.org/packages/vimeo/psalm.json \
+            | jq --raw-output \
+              '[.package.versions[] | select(.version | test("^\\d+\\.\\d+\\.\\d+$")) | .version]
+               | max_by(split(".") | map(tonumber))')
 
-      - name: Build images
-        run: docker build -t ghcr.io/mbinorg/psalm-security-scan:${{ steps.fetch_version.outputs.last }} -t ghcr.io/mbinorg/psalm-security-scan:latest .
+          if [[ -z "$version" || "$version" == "null" ]]; then
+            echo "Unable to determine the latest stable Psalm version" >&2
+            exit 1
+          fi
 
-      - name: Publish
+          echo "Latest Psalm version is $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          sed -i -E "s|require vimeo/psalm(:[^ ]+)?|require vimeo/psalm:$version|" Dockerfile
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.fetch_version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Update action metadata
+        env:
+          VERSION: ${{ steps.fetch_version.outputs.version }}
         run: |
-          docker push ghcr.io/mbinorg/psalm-security-scan:${{ steps.fetch_version.outputs.last }}
-          docker push ghcr.io/mbinorg/psalm-security-scan:latest
+          set -euo pipefail
 
-      - name: Update action.yml
-        run : |
-          git config --global user.name "psalmbot"
-          git config --global user.email "bot@noreply.psalm.dev"
-          yq -i ".runs.image = \"docker://ghcr.io/mbinorg/psalm-security-scan:${{ steps.fetch_version.outputs.last }}\"" action.yml
-          #  Push commit when a file change has been made, skip if the commit would be empty
-          git commit -m "Add newer psalm docker image version ${{ steps.fetch_version.outputs.last }}" action.yml &&
-          git push origin master ||
-          true
+          yq -i ".runs.image = \"docker://${REGISTRY}/${IMAGE_NAME}:${VERSION}\"" action.yml
+
+          if git diff --quiet -- action.yml; then
+            echo "action.yml already references Psalm ${VERSION}"
+            exit 0
+          fi
+
+          git config user.name "psalmbot"
+          git config user.email "bot@noreply.psalm.dev"
+          git add action.yml
+          git commit -m "Add newer psalm docker image version ${VERSION}"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"
